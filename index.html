@@ -26,7 +26,7 @@
     height: 100dvh;
   }
 
-  /* --- КАМЕРА (верхняя часть) --- */
+  /* --- КАМЕРА --- */
   #camera-zone {
     position: relative;
     flex: 1 1 55%;
@@ -179,21 +179,34 @@
     flex: 0 0 56px;
     border: none;
     border-radius: 10px;
-    background: #2a1010;
-    color: #ef4444;
-    font-size: 20px;
+    background: #b91c1c;
+    color: #fff;
     cursor: pointer;
     transition: background .15s, opacity .15s;
     touch-action: manipulation;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
   }
-  #clear-btn:active { background: #3a1515; }
+  #clear-btn:active { background: #991b1b; }
   #clear-btn:disabled {
-    background: #141414;
+    background: #1a1a1a;
     color: #333;
     cursor: default;
+  }
+  #clear-btn:disabled svg {
+    stroke: #333;
+  }
+  #clear-btn svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+    stroke: #fff;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
   }
   #copy-btn {
     flex: 1;
@@ -239,7 +252,15 @@
     </div>
 
     <div id="actions">
-      <button id="clear-btn" disabled title="Удалить всё">🗑</button>
+      <button id="clear-btn" disabled title="Удалить всё" aria-label="Удалить">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6h18" />
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+        </svg>
+      </button>
       <button id="copy-btn" disabled>Копировать всё</button>
     </div>
   </div>
@@ -273,7 +294,6 @@
   let rafId = null;
   let scanning = false;
 
-  // ---------- localStorage ----------
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -286,7 +306,6 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
   }
 
-  // ---------- Нормализация MAC ----------
   function normalizeMAC(raw) {
     if (!raw) return raw;
     const s = String(raw).trim();
@@ -305,7 +324,6 @@
     return s;
   }
 
-  // ---------- Звук ----------
   function beep() {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -323,14 +341,12 @@
     } catch {}
   }
 
-  // ---------- Вибрация ----------
   function vibrate(pattern) {
     try {
       if (navigator.vibrate) navigator.vibrate(pattern);
     } catch {}
   }
 
-  // ---------- Статус ----------
   let statusTimer = null;
   function setStatus(text, isError = false, ms = 2000) {
     statusEl.textContent = text;
@@ -339,7 +355,6 @@
     statusTimer = setTimeout(() => { statusEl.className = ''; }, ms);
   }
 
-  // ---------- Добавление ----------
   function addMAC(raw) {
     const value = normalizeMAC(raw);
     if (!value) return;
@@ -365,7 +380,6 @@
     vibrate(70);
   }
 
-  // ---------- Отрисовка ----------
   function render() {
     countEl.textContent = items.length + ' MAC';
 
@@ -470,7 +484,6 @@
     }
   }
 
-  // ---------- Удаление ----------
   clearBtn.addEventListener('click', () => {
     if (items.length === 0) return;
 
@@ -499,7 +512,6 @@
     setStatus('Удалено: ' + n);
   });
 
-  // ---------- Копирование ----------
   copyBtn.addEventListener('click', async () => {
     let text;
     if (selected.size > 0) {
@@ -538,7 +550,6 @@
     }
   });
 
-  // ---------- Камера ----------
   async function startCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setStatus('Камера недоступна. Откройте в Safari.', true, 5000);
@@ -602,7 +613,6 @@
     rafId = requestAnimationFrame(scanLoop);
   }
 
-  // ---------- Init ----------
   function init() {
     if (typeof window.jsQR !== 'function') {
       setStatus('Ошибка: jsQR не загружен', true, 8000);
