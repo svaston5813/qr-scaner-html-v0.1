@@ -2,39 +2,35 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
 <title>MAC Scanner</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0;
-    background: #0f1115; color: #e7e9ee;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0a0a0a;
+    color: #eaeaea;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
   #app {
-    display: flex; flex-direction: column;
-    height: 100vh; height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
   }
 
-  header {
-    padding: 10px 14px;
-    background: #161922;
-    border-bottom: 1px solid #232838;
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  header h1 {
-    font-size: 16px; margin: 0; font-weight: 600;
-    flex: 1;
-  }
-  #counter { font-size: 13px; color: #8b93a7; }
-
-  #video-wrap {
+  /* --- КАМЕРА (верхняя часть) --- */
+  #camera-zone {
     position: relative;
-    flex: 1;
+    flex: 1 1 55%;
+    min-height: 0;
     background: #000;
     overflow: hidden;
   }
@@ -42,137 +38,161 @@
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    display: none;
   }
-  #video.active { display: block; }
-
-  #placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px; padding: 24px; text-align: center;
-    color: #8b93a7;
-  }
-  #placeholder.hidden { display: none; }
-
   #frame {
     position: absolute;
     top: 50%; left: 50%;
-    width: min(72vw, 72vh); height: min(72vw, 72vh);
+    width: min(65vw, 65vh);
+    height: min(65vw, 65vh);
     transform: translate(-50%, -50%);
-    border-radius: 16px;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 12px;
     pointer-events: none;
-    display: none;
   }
-  #frame.active { display: block; }
   #frame::before, #frame::after {
-    content: ""; position: absolute;
-    width: 36px; height: 36px;
-    border: 3px solid #4ade80;
+    content: "";
+    position: absolute;
+    width: 28px; height: 28px;
+    border: 3px solid #eaeaea;
   }
-  #frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 16px; }
-  #frame::after  { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 16px; }
+  #frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+  #frame::after  { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
 
-  #toast {
-    position: absolute; top: 14px; left: 50%;
+  #status {
+    position: absolute;
+    top: 10px; left: 50%;
     transform: translateX(-50%);
-    padding: 8px 16px; border-radius: 20px;
-    background: rgba(0,0,0,0.75);
-    font-size: 13px;
-    max-width: 90%;
-    text-align: center;
+    padding: 6px 14px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 100px;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    color: #bbb;
     pointer-events: none;
     opacity: 0;
     transition: opacity .2s;
-    z-index: 5;
-  }
-  #toast.show { opacity: 1; }
-  #toast.error { background: rgba(180,40,40,0.9); }
-  #toast.ok { background: rgba(20,140,60,0.9); }
-
-  #controls {
-    padding: 10px 12px;
-    background: #161922;
-    border-top: 1px solid #232838;
-    display: flex; gap: 8px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-  }
-  button {
-    flex: 1;
-    min-width: 0;
-    padding: 12px 10px;
-    border: none;
-    border-radius: 10px;
-    background: #232838;
-    color: #e7e9ee;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    touch-action: manipulation;
     white-space: nowrap;
+    max-width: 90%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  button.primary { background: #2563eb; }
-  button.danger  { background: #b91c1c; }
-  button.success { background: #15803d; }
-  button:active { opacity: .8; }
-  button:disabled { opacity: .4; }
+  #status.show { opacity: 1; }
+  #status.error { background: rgba(180,40,40,0.85); color: #fff; }
 
-  #file-input { display: none; }
-
-  #history {
-    position: fixed; inset: 0;
-    background: #0f1115;
-    display: none;
+  /* --- ПАНЕЛЬ СНИЗУ --- */
+  #bottom {
+    flex: 1 1 45%;
+    display: flex;
     flex-direction: column;
-    z-index: 100;
+    background: #0a0a0a;
+    border-top: 1px solid #1c1c1c;
+    min-height: 0;
   }
-  #history.show { display: flex; }
-  #history header { background: #161922; }
-  #history-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 12px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .mac-item {
+
+  /* шапка списка */
+  #bottom-head {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px;
-    background: #1a1e29;
-    border-radius: 10px;
-    margin-bottom: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #1c1c1c;
+    flex-shrink: 0;
+  }
+  #count {
+    font-size: 13px;
+    color: #888;
+    letter-spacing: 0.3px;
+  }
+  #last {
+    margin-left: auto;
+    font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: #4ade80;
+    opacity: 0;
+    transition: opacity .3s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 55%;
+    text-align: right;
+  }
+  #last.show { opacity: 1; }
+
+  /* список */
+  #list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 10px;
+    min-height: 0;
+  }
+  #empty {
+    text-align: center;
+    color: #444;
+    font-size: 13px;
+    padding: 24px 16px;
+    line-height: 1.5;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    background: #141414;
+    border: 1px solid #1c1c1c;
+    border-radius: 8px;
+    margin-bottom: 6px;
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     font-size: 15px;
-  }
-  .mac-item .idx {
-    color: #6b7280;
-    font-size: 12px;
-    min-width: 24px;
-  }
-  .mac-item .mac {
-    flex: 1;
-    word-break: break-all;
-    color: #93c5fd;
-  }
-  .mac-item .del {
-    background: transparent;
-    border: none;
-    color: #ef4444;
-    font-size: 20px;
-    padding: 0 8px;
-    flex: none;
+    transition: background .15s, border-color .15s;
     cursor: pointer;
   }
-  #history-empty {
-    text-align: center;
-    color: #6b7280;
-    padding: 48px 24px;
-    font-size: 14px;
+  .item:active { background: #1a1a1a; }
+  .item.selected {
+    background: #0e1f36;
+    border-color: #2563eb;
+  }
+  .item .num {
+    color: #555;
+    font-size: 12px;
+    min-width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .item.selected .num { color: #7ba8ff; }
+  .item .mac {
+    flex: 1;
+    color: #d0d0d0;
+    word-break: break-all;
+    letter-spacing: 0.2px;
+  }
+  .item.selected .mac { color: #fff; }
+
+  /* нижняя панель с кнопкой */
+  #actions {
+    flex-shrink: 0;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #1c1c1c;
+  }
+  #copy-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+    touch-action: manipulation;
+  }
+  #copy-btn:active { background: #1d4ed8; }
+  #copy-btn:disabled {
+    background: #1a1a1a;
+    color: #444;
+    cursor: default;
   }
 
   #canvas { display: none; }
@@ -180,51 +200,33 @@
 </head>
 <body>
 <div id="app">
-  <header>
-    <h1>MAC Scanner</h1>
-    <span id="counter">0 шт.</span>
-  </header>
 
-  <div id="video-wrap">
+  <div id="camera-zone">
     <video id="video" playsinline muted autoplay></video>
     <div id="frame"></div>
+    <div id="status"></div>
+  </div>
 
-    <div id="placeholder">
-      <div style="font-size:48px">📷</div>
-      <div>Нажмите «Камера» для сканирования<br>или «Снимок» — откроется камера телефона</div>
+  <div id="bottom">
+    <div id="bottom-head">
+      <span id="count">0</span>
+      <span id="last"></span>
     </div>
 
-    <div id="toast"></div>
+    <div id="list">
+      <div id="empty">Наведите камеру на QR-код<br>Сканирование идёт автоматически</div>
+    </div>
+
+    <div id="actions">
+      <button id="copy-btn" disabled>Копировать всё</button>
+    </div>
   </div>
 
-  <div id="controls">
-    <button id="btn-camera" class="primary">📷 Камера</button>
-    <button id="btn-photo">🖼 Снимок</button>
-    <button id="btn-history" class="success">📋 История</button>
-  </div>
-</div>
-
-<input id="file-input" type="file" accept="image/*" capture="environment">
-
-<div id="history">
-  <header>
-    <button id="btn-back" style="flex:0;padding:8px 14px;background:#232838">← Назад</button>
-    <h1 style="margin-left:10px">История</h1>
-    <span id="counter2" style="color:#8b93a7;font-size:13px"></span>
-  </header>
-  <div id="history-list"></div>
-  <div id="history-empty">Пока пусто. Отсканируйте первый QR.</div>
-  <div id="controls">
-    <button id="btn-copy-all" class="primary">📄 Копировать все</button>
-    <button id="btn-clear" class="danger">🗑 Очистить</button>
-  </div>
 </div>
 
 <canvas id="canvas"></canvas>
 
-<!-- jsQR: подключается из соседнего файла jsQR.min.js -->
 <script src="jsQR.min.js"></script>
-
 <script>
 (() => {
   'use strict';
@@ -232,32 +234,24 @@
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const frame = document.getElementById('frame');
-  const placeholder = document.getElementById('placeholder');
-  const toast = document.getElementById('toast');
-  const counter = document.getElementById('counter');
-  const counter2 = document.getElementById('counter2');
-  const btnCamera = document.getElementById('btn-camera');
-  const btnPhoto = document.getElementById('btn-photo');
-  const btnHistory = document.getElementById('btn-history');
-  const btnBack = document.getElementById('btn-back');
-  const btnCopyAll = document.getElementById('btn-copy-all');
-  const btnClear = document.getElementById('btn-clear');
-  const fileInput = document.getElementById('file-input');
-  const historyScreen = document.getElementById('history');
-  const historyList = document.getElementById('history-list');
-  const historyEmpty = document.getElementById('history-empty');
+  const statusEl = document.getElementById('status');
+  const countEl = document.getElementById('count');
+  const lastEl = document.getElementById('last');
+  const listEl = document.getElementById('list');
+  const emptyEl = document.getElementById('empty');
+  const copyBtn = document.getElementById('copy-btn');
 
-  let stream = null;
-  let scanning = false;
-  let rafId = null;
-  const STORAGE_KEY = 'mac_scanner_history_v1';
-  let history = loadHistory();
+  const STORAGE_KEY = 'mac_scanner_v2';
+
+  let items = load();
+  let selected = new Set(); // индексы выделенных
   let lastScan = { value: '', time: 0 };
   let audioCtx = null;
-  let detector = null; // BarcodeDetector, если поддерживается
+  let rafId = null;
+  let scanning = false;
 
-  function loadHistory() {
+  // ---------- localStorage ----------
+  function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
@@ -265,11 +259,33 @@
       return Array.isArray(arr) ? arr : [];
     } catch { return []; }
   }
-  function saveHistory() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); } catch {}
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
   }
 
-  function beep(ok = true) {
+  // ---------- Нормализация MAC ----------
+  function normalizeMAC(raw) {
+    if (!raw) return raw;
+    const s = String(raw).trim();
+
+    // Уже MAC с разделителями
+    if (/^([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})$/.test(s)) {
+      const hex = s.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+      return hex.match(/.{2}/g).join(':');
+    }
+
+    // Префикс "MAC:" / "МАС:" / "MAK:"
+    const m = s.match(/^\s*(?:MAC|МАС|MAK|M\.?A\.?C)\s*[:\-]?\s*(.+)$/i);
+    if (m) {
+      const inner = m[1].trim();
+      return normalizeMAC(inner);
+    }
+
+    return s;
+  }
+
+  // ---------- Звук ----------
+  function beep() {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -277,312 +293,179 @@
       const gain = audioCtx.createGain();
       osc.connect(gain); gain.connect(audioCtx.destination);
       osc.type = 'sine';
-      osc.frequency.value = ok ? 1000 : 300;
+      osc.frequency.value = 1100;
       gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.2);
+      osc.stop(audioCtx.currentTime + 0.18);
     } catch {}
   }
 
-  function vibrate(ms = 60) {
-    try { if (navigator.vibrate) navigator.vibrate(ms); } catch {}
+  // ---------- Вибрация ----------
+  function vibrate(pattern) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    } catch {}
   }
 
-  let toastTimer = null;
-  function showToast(text, kind = '') {
-    toast.textContent = text;
-    toast.className = 'show ' + kind;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.className = ''; }, 1800);
+  // ---------- Статус ----------
+  let statusTimer = null;
+  function setStatus(text, isError = false, ms = 2000) {
+    statusEl.textContent = text;
+    statusEl.className = 'show' + (isError ? ' error' : '');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => { statusEl.className = ''; }, ms);
   }
 
-  function normalizeMAC(raw) {
-    if (!raw) return raw;
-    const s = raw.trim();
-    const macLike = s.match(/^([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})$/);
-    if (macLike) {
-      const hex = s.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-      return hex.match(/.{2}/g).join(':');
-    }
-    const m = s.match(/^\s*(?:MAC|МАС|MAK|M\.?A\.?C)\s*[:\-]?\s*([0-9A-Fa-f]{12})\s*$/i);
-    if (m) {
-      const hex = m[1].toUpperCase();
-      return hex.match(/.{2}/g).join(':');
-    }
-    return s;
-  }
-
-  function extractValue(raw) {
-    if (!raw) return raw;
-    const s = raw.trim();
-    const m = s.match(/^\s*(?:MAC|МАС|MAK)\s*[:\-]?\s*(.+)$/i);
-    if (m) return normalizeMAC(m[1]);
-    return normalizeMAC(s);
-  }
-
-  function addToHistory(rawValue) {
-    const value = extractValue(rawValue);
+  // ---------- Добавление ----------
+  function addMAC(raw) {
+    const value = normalizeMAC(raw);
     if (!value) return;
 
-    const recent = history.slice(-100);
-    if (recent.some(x => x.value === value)) {
-      showToast('Уже есть: ' + value, '');
-      vibrate(30);
+    // Дубликат?
+    if (items.some(x => x.value === value)) {
+      setStatus('Уже в списке: ' + value);
+      vibrate(20);
       return;
     }
 
-    history.push({ value, raw: rawValue, ts: Date.now() });
-    saveHistory();
-    updateCounters();
-    renderHistory();
-    showToast('✓ ' + value, 'ok');
-    beep(true);
-    vibrate(80);
+    items.push({ value, ts: Date.now() });
+    save();
+    render();
+    updateCopyButton();
+
+    // Показать последний
+    lastEl.textContent = value;
+    lastEl.classList.add('show');
+    clearTimeout(lastEl._t);
+    lastEl._t = setTimeout(() => lastEl.classList.remove('show'), 2500);
+
+    setStatus('✓ ' + value);
+    beep();
+    vibrate(70);
   }
 
-  function updateCounters() {
-    const n = history.length;
-    counter.textContent = n + ' шт.';
-    counter2.textContent = n + ' шт.';
-  }
+  // ---------- Отрисовка ----------
+  function render() {
+    countEl.textContent = items.length + ' MAC';
 
-  function renderHistory() {
-    historyList.innerHTML = '';
-    if (history.length === 0) {
-      historyEmpty.style.display = 'block';
+    if (items.length === 0) {
+      emptyEl.style.display = 'block';
+      // Удалить все .item, оставив #empty
+      listEl.querySelectorAll('.item').forEach(n => n.remove());
       return;
     }
-    historyEmpty.style.display = 'none';
+    emptyEl.style.display = 'none';
 
-    history.forEach((item, i) => {
+    // Простая перерисовка
+    listEl.innerHTML = '';
+    items.forEach((it, i) => {
       const div = document.createElement('div');
-      div.className = 'mac-item';
-      div.innerHTML = `
-        <span class="idx">${i + 1}</span>
-        <span class="mac">${escapeHtml(item.value)}</span>
-        <button class="del" data-i="${i}" aria-label="Удалить">✕</button>
-      `;
-      historyList.appendChild(div);
-    });
+      div.className = 'item' + (selected.has(i) ? ' selected' : '');
+      div.dataset.i = i;
 
-    historyList.querySelectorAll('.del').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.currentTarget.dataset.i, 10);
-        history.splice(idx, 1);
-        saveHistory();
-        updateCounters();
-        renderHistory();
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = (i + 1) + '.';
+
+      const mac = document.createElement('span');
+      mac.className = 'mac';
+      mac.textContent = it.value;
+
+      div.appendChild(num);
+      div.appendChild(mac);
+
+      // Тап = выделение
+      let longPressTimer = null;
+      let longPressFired = false;
+
+      div.addEventListener('touchstart', () => {
+        longPressFired = false;
+        longPressTimer = setTimeout(() => {
+          longPressFired = true;
+          confirmDelete(i);
+        }, 600);
+      }, { passive: true });
+
+      div.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (!longPressFired) toggleSelect(i);
       });
+
+      div.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+      }, { passive: true });
+
+      // Для мыши (на случай проверки на ПК)
+      div.addEventListener('click', (e) => {
+        if (e.pointerType === 'mouse' || !('ontouchstart' in window)) {
+          toggleSelect(i);
+        }
+      });
+
+      listEl.appendChild(div);
     });
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[c]));
+  function toggleSelect(i) {
+    if (selected.has(i)) selected.delete(i);
+    else selected.add(i);
+
+    const node = listEl.querySelector(`.item[data-i="${i}"]`);
+    if (node) node.classList.toggle('selected', selected.has(i));
+
+    vibrate(15);
+    updateCopyButton();
   }
 
-  async function startCamera() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showToast('Камера недоступна. Используйте «Снимок».', 'error');
+  function confirmDelete(i) {
+    const value = items[i]?.value;
+    if (!value) return;
+    if (confirm('Удалить ' + value + '?')) {
+      items.splice(i, 1);
+      selected.clear();
+      save();
+      render();
+      updateCopyButton();
+      vibrate(40);
+    }
+  }
+
+  function updateCopyButton() {
+    if (items.length === 0) {
+      copyBtn.disabled = true;
+      copyBtn.textContent = 'Копировать всё';
       return;
     }
+    copyBtn.disabled = false;
 
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-    } catch (e) {
-      console.error(e);
-      let msg = 'Не удалось открыть камеру';
-      if (e.name === 'NotAllowedError') msg = 'Доступ к камере запрещён.';
-      else if (e.name === 'NotFoundError') msg = 'Камера не найдена.';
-      else if (e.name === 'NotReadableError') msg = 'Камера занята другим приложением.';
-      else if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.protocol !== 'file:') {
-        msg = 'Нужен HTTPS или откройте в браузере.';
-      }
-      showToast(msg, 'error');
-      return;
+    if (selected.size > 0) {
+      copyBtn.textContent = 'Копировать ' + selected.size;
+    } else {
+      copyBtn.textContent = 'Копировать всё';
     }
-
-    video.srcObject = stream;
-    try { await video.play(); } catch {}
-    video.classList.add('active');
-    frame.classList.add('active');
-    placeholder.classList.add('hidden');
-    btnCamera.textContent = '■ Стоп';
-    btnCamera.classList.add('danger');
-    btnCamera.classList.remove('primary');
-    scanning = true;
-
-    // Пробуем нативный BarcodeDetector (Chrome Android)
-    if ('BarcodeDetector' in window) {
-      try {
-        detector = new BarcodeDetector({ formats: ['qr_code'] });
-      } catch { detector = null; }
-    }
-
-    scanLoop();
   }
 
-  function stopCamera() {
-    scanning = false;
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
+  // ---------- Копирование ----------
+  copyBtn.addEventListener('click', async () => {
+    let text;
+    if (selected.size > 0) {
+      // Выделенные, в порядке исходного списка
+      const sorted = Array.from(selected).sort((a, b) => a - b);
+      text = sorted.map(i => items[i].value).join('\n');
+    } else {
+      text = items.map(x => x.value).join('\n');
     }
-    video.srcObject = null;
-    video.classList.remove('active');
-    frame.classList.remove('active');
-    placeholder.classList.remove('hidden');
-    btnCamera.textContent = '📷 Камера';
-    btnCamera.classList.remove('danger');
-    btnCamera.classList.add('primary');
-  }
 
-  async function scanLoop() {
-    if (!scanning) return;
+    if (!text) return;
 
-    if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth) {
-      // 1. Пробуем нативный детектор
-      if (detector) {
-        try {
-          const codes = await detector.detect(video);
-          if (codes && codes.length && codes[0].rawValue) {
-            handleScan(codes[0].rawValue);
-          }
-        } catch { /* fallback */ }
-      } else {
-        // 2. jsQR
-        const vw = video.videoWidth, vh = video.videoHeight;
-        const maxSide = 640;
-        const scale = Math.min(1, maxSide / Math.max(vw, vh));
-        const w = Math.round(vw * scale), h = Math.round(vh * scale);
-
-        canvas.width = w; canvas.height = h;
-        ctx.drawImage(video, 0, 0, w, h);
-
-        const img = ctx.getImageData(0, 0, w, h);
-        const code = window.jsQR
-          ? window.jsQR(img.data, w, h, { inversionAttempts: 'attemptBoth' })
-          : null;
-
-        if (code && code.data) {
-          handleScan(code.data);
-        }
-      }
-    }
-    rafId = requestAnimationFrame(scanLoop);
-  }
-
-  function scanImage(imgEl) {
-    const maxSide = 1280;
-    const vw = imgEl.naturalWidth || imgEl.width;
-    const vh = imgEl.naturalHeight || imgEl.height;
-    const scale = Math.min(1, maxSide / Math.max(vw, vh));
-    const w = Math.round(vw * scale), h = Math.round(vh * scale);
-
-    canvas.width = w; canvas.height = h;
-    ctx.drawImage(imgEl, 0, 0, w, h);
-
-    const img = ctx.getImageData(0, 0, w, h);
-
-    let code = null;
-    for (const mode of ['dontInvert', 'attemptBoth', 'invertFirst']) {
-      code = window.jsQR(img.data, w, h, { inversionAttempts: mode });
-      if (code && code.data) break;
-    }
-    return code;
-  }
-
-  function handleScan(data) {
-    const now = Date.now();
-    if (data === lastScan.value && now - lastScan.time < 2000) return;
-    lastScan = { value: data, time: now };
-    addToHistory(data);
-  }
-
-  btnPhoto.addEventListener('click', () => {
-    fileInput.value = '';
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = async () => {
-      try {
-        // Пробуем нативный детектор на картинке
-        let found = null;
-        if ('BarcodeDetector' in window) {
-          try {
-            const det = new BarcodeDetector({ formats: ['qr_code'] });
-            const codes = await det.detect(img);
-            if (codes && codes.length) found = codes[0].rawValue;
-          } catch {}
-        }
-        // Иначе — jsQR
-        if (!found) {
-          const code = scanImage(img);
-          if (code && code.data) found = code.data;
-        }
-
-        if (found) addToHistory(found);
-        else {
-          showToast('QR не найден. Попробуйте ближе/резче.', 'error');
-          beep(false);
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Ошибка обработки фото', 'error');
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    };
-    img.onerror = () => {
-      showToast('Не удалось открыть изображение', 'error');
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  });
-
-  btnCamera.addEventListener('click', () => {
-    if (scanning) stopCamera();
-    else startCamera();
-  });
-
-  btnHistory.addEventListener('click', () => {
-    if (scanning) stopCamera();
-    historyScreen.classList.add('show');
-    renderHistory();
-  });
-
-  btnBack.addEventListener('click', () => {
-    historyScreen.classList.remove('show');
-  });
-
-  btnCopyAll.addEventListener('click', async () => {
-    if (history.length === 0) {
-      showToast('История пуста', '');
-      return;
-    }
-    const text = history.map(x => x.value).join('\n');
-
+    let ok = false;
     try {
       await navigator.clipboard.writeText(text);
-      showToast('✓ Скопировано: ' + history.length + ' шт.', 'ok');
-    } catch (e) {
+      ok = true;
+    } catch {
+      // фолбэк
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.setAttribute('readonly', '');
@@ -592,41 +475,104 @@
       document.body.appendChild(ta);
       ta.select();
       ta.setSelectionRange(0, ta.value.length);
-      let ok = false;
       try { ok = document.execCommand('copy'); } catch {}
       document.body.removeChild(ta);
-      if (ok) showToast('✓ Скопировано: ' + history.length + ' шт.', 'ok');
-      else showToast('Копирование не удалось. Выделите вручную.', 'error');
+    }
+
+    if (ok) {
+      vibrate(50);
+      const n = selected.size > 0 ? selected.size : items.length;
+      setStatus('✓ Скопировано: ' + n);
+    } else {
+      setStatus('Не удалось скопировать', true);
     }
   });
 
-  btnClear.addEventListener('click', () => {
-    if (history.length === 0) return;
-    if (confirm('Удалить все ' + history.length + ' записей?')) {
-      history = [];
-      saveHistory();
-      updateCounters();
-      renderHistory();
-      showToast('Очищено', '');
+  // ---------- Камера ----------
+  async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('Камера недоступна. Откройте в Safari.', true, 5000);
+      return;
     }
-  });
 
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+
+      video.srcObject = stream;
+      await video.play();
+      scanning = true;
+      setStatus('Наведите на QR-код', false, 2500);
+      scanLoop();
+    } catch (e) {
+      console.error(e);
+      let msg = 'Не удалось открыть камеру';
+      if (e.name === 'NotAllowedError') msg = 'Доступ к камере запрещён. Разрешите в Safari.';
+      else if (e.name === 'NotFoundError') msg = 'Камера не найдена.';
+      else if (e.name === 'NotReadableError') msg = 'Камера занята другим приложением.';
+      setStatus(msg, true, 6000);
+    }
+  }
+
+  function scanLoop() {
+    if (!scanning) return;
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth) {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const maxSide = 640;
+      const scale = Math.min(1, maxSide / Math.max(vw, vh));
+      const w = Math.round(vw * scale);
+      const h = Math.round(vh * scale);
+
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(video, 0, 0, w, h);
+
+      const img = ctx.getImageData(0, 0, w, h);
+      const code = window.jsQR
+        ? window.jsQR(img.data, w, h, { inversionAttempts: 'attemptBoth' })
+        : null;
+
+      if (code && code.data) {
+        const now = Date.now();
+        if (code.data !== lastScan.value || now - lastScan.time > 2000) {
+          lastScan = { value: code.data, time: now };
+          addMAC(code.data);
+        }
+      }
+    }
+
+    rafId = requestAnimationFrame(scanLoop);
+  }
+
+  // ---------- Init ----------
   function init() {
-    if (typeof window.jsQR !== 'function' && !('BarcodeDetector' in window)) {
-      showToast('Нет ни jsQR, ни BarcodeDetector. Положите jsQR.min.js рядом с HTML.', 'error');
-    }
-    updateCounters();
-    renderHistory();
-
-    const ua = navigator.userAgent || '';
-    const inTelegram = /Telegram/i.test(ua);
-    if (inTelegram) {
-      showToast('В Telegram используйте «Снимок»', '');
-      setTimeout(() => showToast('Или откройте файл в Chrome/Safari', ''), 3000);
+    if (typeof window.jsQR !== 'function') {
+      setStatus('Ошибка: jsQR не загружен', true, 8000);
+      return;
     }
 
-    window.addEventListener('pagehide', stopCamera);
-    window.addEventListener('beforeunload', stopCamera);
+    render();
+    updateCopyButton();
+
+    // Запускаем камеру сразу
+    // Небольшая задержка, чтобы DOM успел отрисоваться и Safari дал запрос
+    setTimeout(startCamera, 300);
+
+    // Освобождение камеры
+    window.addEventListener('pagehide', () => {
+      scanning = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      const s = video.srcObject;
+      if (s) s.getTracks().forEach(t => t.stop());
+    });
   }
 
   init();
