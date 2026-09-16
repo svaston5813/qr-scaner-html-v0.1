@@ -89,7 +89,6 @@
     min-height: 0;
   }
 
-  /* шапка списка */
   #bottom-head {
     display: flex;
     align-items: center;
@@ -118,7 +117,6 @@
   }
   #last.show { opacity: 1; }
 
-  /* список */
   #list {
     flex: 1;
     overflow-y: auto;
@@ -168,14 +166,37 @@
   }
   .item.selected .mac { color: #fff; }
 
-  /* нижняя панель с кнопкой */
+  /* нижняя панель с кнопками */
   #actions {
     flex-shrink: 0;
     padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid #1c1c1c;
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  #clear-btn {
+    flex: 0 0 56px;
+    border: none;
+    border-radius: 10px;
+    background: #2a1010;
+    color: #ef4444;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #clear-btn:active { background: #3a1515; }
+  #clear-btn:disabled {
+    background: #141414;
+    color: #333;
+    cursor: default;
   }
   #copy-btn {
-    width: 100%;
+    flex: 1;
     padding: 15px;
     border: none;
     border-radius: 10px;
@@ -218,6 +239,7 @@
     </div>
 
     <div id="actions">
+      <button id="clear-btn" disabled title="Удалить всё">🗑</button>
       <button id="copy-btn" disabled>Копировать всё</button>
     </div>
   </div>
@@ -240,11 +262,12 @@
   const listEl = document.getElementById('list');
   const emptyEl = document.getElementById('empty');
   const copyBtn = document.getElementById('copy-btn');
+  const clearBtn = document.getElementById('clear-btn');
 
   const STORAGE_KEY = 'mac_scanner_v2';
 
   let items = load();
-  let selected = new Set(); // индексы выделенных
+  let selected = new Set();
   let lastScan = { value: '', time: 0 };
   let audioCtx = null;
   let rafId = null;
@@ -268,13 +291,11 @@
     if (!raw) return raw;
     const s = String(raw).trim();
 
-    // Уже MAC с разделителями
     if (/^([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})[:\-]?([0-9A-Fa-f]{2})$/.test(s)) {
       const hex = s.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
       return hex.match(/.{2}/g).join(':');
     }
 
-    // Префикс "MAC:" / "МАС:" / "MAK:"
     const m = s.match(/^\s*(?:MAC|МАС|MAK|M\.?A\.?C)\s*[:\-]?\s*(.+)$/i);
     if (m) {
       const inner = m[1].trim();
@@ -323,7 +344,6 @@
     const value = normalizeMAC(raw);
     if (!value) return;
 
-    // Дубликат?
     if (items.some(x => x.value === value)) {
       setStatus('Уже в списке: ' + value);
       vibrate(20);
@@ -335,7 +355,6 @@
     render();
     updateCopyButton();
 
-    // Показать последний
     lastEl.textContent = value;
     lastEl.classList.add('show');
     clearTimeout(lastEl._t);
@@ -352,13 +371,11 @@
 
     if (items.length === 0) {
       emptyEl.style.display = 'block';
-      // Удалить все .item, оставив #empty
       listEl.querySelectorAll('.item').forEach(n => n.remove());
       return;
     }
     emptyEl.style.display = 'none';
 
-    // Простая перерисовка
     listEl.innerHTML = '';
     items.forEach((it, i) => {
       const div = document.createElement('div');
@@ -376,7 +393,6 @@
       div.appendChild(num);
       div.appendChild(mac);
 
-      // Тап = выделение
       let longPressTimer = null;
       let longPressFired = false;
 
@@ -397,7 +413,6 @@
         clearTimeout(longPressTimer);
       }, { passive: true });
 
-      // Для мыши (на случай проверки на ПК)
       div.addEventListener('click', (e) => {
         if (e.pointerType === 'mouse' || !('ontouchstart' in window)) {
           toggleSelect(i);
@@ -436,22 +451,58 @@
     if (items.length === 0) {
       copyBtn.disabled = true;
       copyBtn.textContent = 'Копировать всё';
-      return;
-    }
-    copyBtn.disabled = false;
-
-    if (selected.size > 0) {
-      copyBtn.textContent = 'Копировать ' + selected.size;
     } else {
-      copyBtn.textContent = 'Копировать всё';
+      copyBtn.disabled = false;
+      if (selected.size > 0) {
+        copyBtn.textContent = 'Копировать ' + selected.size;
+      } else {
+        copyBtn.textContent = 'Копировать всё';
+      }
+    }
+
+    if (items.length === 0) {
+      clearBtn.disabled = true;
+    } else {
+      clearBtn.disabled = false;
+      clearBtn.title = selected.size > 0
+        ? 'Удалить выделенные (' + selected.size + ')'
+        : 'Удалить всё';
     }
   }
+
+  // ---------- Удаление ----------
+  clearBtn.addEventListener('click', () => {
+    if (items.length === 0) return;
+
+    const isSelected = selected.size > 0;
+    const n = isSelected ? selected.size : items.length;
+
+    const msg = isSelected
+      ? 'Удалить ' + n + ' выделенных MAC?'
+      : 'Удалить все ' + n + ' MAC из списка?';
+
+    if (!confirm(msg)) return;
+
+    if (isSelected) {
+      const idx = Array.from(selected).sort((a, b) => b - a);
+      idx.forEach(i => items.splice(i, 1));
+      selected.clear();
+    } else {
+      items = [];
+      selected.clear();
+    }
+
+    save();
+    render();
+    updateCopyButton();
+    vibrate(50);
+    setStatus('Удалено: ' + n);
+  });
 
   // ---------- Копирование ----------
   copyBtn.addEventListener('click', async () => {
     let text;
     if (selected.size > 0) {
-      // Выделенные, в порядке исходного списка
       const sorted = Array.from(selected).sort((a, b) => a - b);
       text = sorted.map(i => items[i].value).join('\n');
     } else {
@@ -465,7 +516,6 @@
       await navigator.clipboard.writeText(text);
       ok = true;
     } catch {
-      // фолбэк
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.setAttribute('readonly', '');
@@ -562,11 +612,8 @@
     render();
     updateCopyButton();
 
-    // Запускаем камеру сразу
-    // Небольшая задержка, чтобы DOM успел отрисоваться и Safari дал запрос
     setTimeout(startCamera, 300);
 
-    // Освобождение камеры
     window.addEventListener('pagehide', () => {
       scanning = false;
       if (rafId) cancelAnimationFrame(rafId);
